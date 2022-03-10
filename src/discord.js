@@ -14,6 +14,13 @@ rtc.on('EXECUTE_COMMAND', (command) => {
   work()
 })
 
+rtc.on('SEND_EMBED', async ({ to, embed }) => {
+  try {
+    const member = await servers[store_id].members.fetch(to)
+    await member.send({ embeds: [embed] })
+  } catch (ex) {}
+})
+
 rtc.on('EXECUTE_COMMANDS', (commands) => {
   queue.push(...commands)
   work()
