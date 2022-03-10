@@ -16,8 +16,8 @@ rtc.on('EXECUTE_COMMAND', (command) => {
 
 rtc.on('SEND_EMBED', async ({ to, embed }) => {
   try {
-    const member = await servers[store_id].members.fetch(to)
-    await member.send({ embeds: [embed] })
+    const user = await bot.users.fetch(to)
+    await user.send({ embeds: [embed] })
   } catch (ex) {}
 })
 
