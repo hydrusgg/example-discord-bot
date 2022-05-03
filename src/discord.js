@@ -27,13 +27,17 @@ rtc.on('EXECUTE_COMMANDS', (commands) => {
 })
 
 const commands = {
-  async addrole(member, roleId) {
-    const role = await member.guild.roles.fetch(roleId)
-    await member.roles.add(role, 'Hydrus')
+  async addrole(member, ...roles) {
+    for (let roleId of roles) {
+      const role = await member.guild.roles.fetch(roleId)
+      await member.roles.add(role, 'Hydrus')
+    }
   },
-  async delrole(member, roleId) {
-    const role = await member.guild.roles.fetch(roleId)
-    await member.roles.remove(role, 'Hydrus')
+  async delrole(member, ...roles) {
+    for (let roleId of roles) {
+      const role = await member.guild.roles.fetch(roleId)
+      await member.roles.remove(role, 'Hydrus')
+    }
   },
   async ban(member) {
     await member.ban()
