@@ -39,6 +39,14 @@ const commands = {
       await member.roles.remove(role, 'Hydrus')
     }
   },
+  async delfirstrole(member, ...args) {
+   for (let role of args) {
+      if (member.roles.cache.has(role)) {
+        await member.roles.remove(role)
+        break
+      }
+    }
+  },
   async ban(member) {
     await member.ban()
   },
