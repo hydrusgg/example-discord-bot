@@ -32,14 +32,18 @@ eventHandlers.on('$open', socket => {
   eventHandlers.once('$close', () => clearInterval(interval))
 })
 
-eventHandlers.on('$error', () => {
-  setTimeout(createRTC, 5000)
+eventHandlers.on('$error', error => {
+  if (store == null) {
+    console.error('Failed to connect: %s', error.message)
+    setTimeout(createRTC, 10e3)
+  }
 })
 
 eventHandlers.on('$close', () => {
-  if (store !== null) {
+  if (store != null) {
     console.log('Disconnected from RTC, waiting 10 seconds to try again...')
     setTimeout(createRTC, 10e3)
+    store = null
   }
 })
 
