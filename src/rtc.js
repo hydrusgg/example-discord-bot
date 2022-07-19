@@ -36,6 +36,8 @@ eventHandlers.on('$error', error => {
   if (store == null) {
     console.error('Failed to connect: %s', error.message)
     setTimeout(createRTC, 10e3)
+  } else {
+    console.error('Error [%s] %s', error.name, error.message)
   }
 })
 
