@@ -5,7 +5,13 @@ let store
 const eventHandlers = new EventEmitter()
 
 function createRTC() {
-  const websocket = new WebSocket(`wss://rtc.hydrus.gg/${process.env.TOKEN}/discord`)
+  const websocket = new WebSocket('wss://rtc.hydrus.gg', {
+    headers: {
+      'authorization': process.env.TOKEN,
+      'x-scope': 'discord',
+      'x-pid': process.pid,
+    }
+  })
   websocket.on('message', (data) => {
     const { event, payload } = JSON.parse(data.toString())
     eventHandlers.emit(event, payload)
