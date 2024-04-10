@@ -1,58 +1,94 @@
-const WebSocket = require('ws')
-const { EventEmitter } = require('events')
+import WebSocket from 'ws'
+import EventEmitter from 'events'
+import api, { getPendingCommands } from './api.js'
 
-let store
 const eventHandlers = new EventEmitter()
 
-function createRTC() {
-  const websocket = new WebSocket('wss://rtc.hydrus.gg', {
-    headers: {
-      'authorization': process.env.TOKEN,
-      'x-scope': 'discord',
-      'x-pid': process.pid,
+const headers = {
+  authorization: `Bearer ${process.env.TOKEN}`,
+}
+
+async function createRTC() {
+  const handshake = await api.get('@me', { validateStatus: _ => true })
+
+  if (handshake.status !== 200) {
+    console.error('Failed to handshake: HTTP %d', handshake.status)
+    console.error(handshake.data)
+    return
+  }
+
+  const { data: store } = handshake
+
+  const websocket = new WebSocket('wss://ws.hydrus.gg', { headers })
+
+  websocket.on('message', (message) => {
+    if (process.env.NODE_ENV === 'local') {
+      console.log(message.toString())
+    }
+    const { event, data } = JSON.parse(message.toString())
+    eventHandlers.emit(event, data)
+  })
+
+  websocket.on('open', () => {
+    websocket.send(JSON.stringify({
+      event: 'SUBSCRIBE',
+      data: `Stores.${store.id}.Commands.Discord`,
+    }))
+  })
+
+  eventHandlers.once('Channels.Allowed', async () => {
+    console.log('Connected as %s [%s]', store.domain, store.name)
+
+    let page = 1
+    const queue = []
+
+    while (true) {
+      const commands = await getPendingCommands(page)
+
+      if (commands.length == 0) {
+        break
+      }
+
+      queue.push(...commands)
+      page += 1
+    }
+
+    const unique = queue.filter(({ id }, idx) => {
+      const index = queue.findIndex(x => x.id == id)
+      return idx == index
+    })
+
+    unique.forEach(data => {
+      eventHandlers.emit('EXECUTE_COMMAND', data)
+    })
+  })
+
+  websocket.on('close', () => {
+    if (store != null) {
+      console.log('Disconnected from RTC, waiting 10 seconds to try again...')
+      setTimeout(createRTC, 10e3)
+      store = null
     }
   })
-  websocket.on('message', (data) => {
-    const { event, payload } = JSON.parse(data.toString())
-    eventHandlers.emit(event, payload)
+
+  websocket.on('error', () => {
+    if (store == null) {
+      console.error('Failed to connect: %s', error.message)
+      setTimeout(createRTC, 10e3)
+    } else {
+      console.error('Error [%s] %s', error.name, error.message)
+    }
   })
-  websocket.on('error', (error) => eventHandlers.emit('$error', error))
-  websocket.on('close', () => eventHandlers.emit('$close'))
-  websocket.on('open', () => eventHandlers.emit('$open', websocket))
+
+  const handleDisconnect = setTimeout(() => {
+    console.warn('Socket disconnected, no ping was received, no internet?')
+    console.warn('Next try in 30 seconds')
+    websocket.close(4000)
+  }, 90_000)
+
+  websocket.on('ping', () => handleDisconnect.refresh())
 }
 
 createRTC()
 
-eventHandlers.on('HANDSHAKE', (response) => {
-  if (response.error) {
-    console.error('Handshake failed: '+response.error)
-    process.exit()
-  } else {
-    store = response
-    console.log('Authorized as '+response.domain)
-  }
-})
-
-eventHandlers.on('$open', socket => {
-  const interval = setInterval(() => socket.ping(), 60e3)
-  eventHandlers.once('$close', () => clearInterval(interval))
-})
-
-eventHandlers.on('$error', error => {
-  if (store == null) {
-    console.error('Failed to connect: %s', error.message)
-    setTimeout(createRTC, 10e3)
-  } else {
-    console.error('Error [%s] %s', error.name, error.message)
-  }
-})
-
-eventHandlers.on('$close', () => {
-  if (store != null) {
-    console.log('Disconnected from RTC, waiting 10 seconds to try again...')
-    setTimeout(createRTC, 10e3)
-    store = null
-  }
-})
-
-module.exports = eventHandlers
+export default eventHandlers

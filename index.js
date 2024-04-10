@@ -1,3 +1,3 @@
-require('dotenv').config()
-require('./src/discord')
-require('./src/rtc')
+import 'dotenv/config'
+import './src/discord.js'
+import './src/rtc.js'

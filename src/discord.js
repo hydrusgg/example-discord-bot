@@ -1,6 +1,6 @@
-const { Client } = require('discord.js')
-const rtc = require('./rtc')
-const api = require('./api')
+import { Client } from 'discord.js'
+import rtc from './rtc.js'
+import api from './api.js'
 
 const queue = []
 const bot = new Client({ intents: [] })
@@ -79,7 +79,9 @@ async function work() {
         console.error(`Command: ${data.id} (${err.message})`)
       })
     } catch (error) {
-      console.error(error)
+      if (error.httpStatus !== 404) {
+        console.error(error)
+      }
       await api.patch('/commands/'+data.id, {
         status: 'failed',
         message: error.message
