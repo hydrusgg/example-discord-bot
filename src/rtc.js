@@ -67,12 +67,11 @@ async function createRTC() {
     if (store != null) {
       console.log('Disconnected from RTC, waiting 10 seconds to try again...')
       setTimeout(createRTC, 10e3)
-      store = null
     }
   })
 
   websocket.on('error', () => {
-    if (store == null) {
+    if (!store) {
       console.error('Failed to connect: %s', error.message)
       setTimeout(createRTC, 10e3)
     } else {
