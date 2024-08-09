@@ -72,9 +72,9 @@ async function createRTC() {
 
   websocket.on('error', (error) => {
     if (!store) {
-      console.error('Failed to connect: %s', error.message)
+      console.error('Failed to connect: %s', error?.message)
       setTimeout(createRTC, 10e3)
-    } else {
+    } else if (error instanceof Error) {
       console.error('Error [%s] %s', error.name, error.message)
     }
   })
