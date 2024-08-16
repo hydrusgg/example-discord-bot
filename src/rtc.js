@@ -9,7 +9,12 @@ const headers = {
 }
 
 async function createRTC() {
-  const handshake = await api.get('@me', { validateStatus: _ => true })
+  const handshake = await api.get('@me', {
+     validateStatus: _ => true 
+  }).catch((err) => ({
+    status: 0,
+    data: err.message,
+  }))
 
   if (handshake.status !== 200) {
     console.error('Failed to handshake: HTTP %d', handshake.status)
