@@ -21,6 +21,35 @@ rtc.on('SEND_EMBED', async ({ to, embed }) => {
   } catch (ex) {}
 })
 
+rtc.on('SEND_EXPIRATION_EMBED', async ({ to, embed, roles }) => {
+  const guild = await bot.guilds.fetch(process.env.GUILD_ID)
+  const member = await guild.members.fetch(to).catch(()=>null)
+
+  try {
+    embed.fields = []
+
+    for (const [roleId, dateString] of Object.entries(roles)) {
+      const role = await guild.roles.fetch(roleId).catch(()=>null)
+      if (!role) {
+        continue
+      }
+
+      const locale = new Date(dateString).toLocaleString('pt-BR')
+
+      embed.fields.push({
+        name: `**${role.name}**`,
+        value: '```' + locale + '```'
+      })
+    }
+
+    if (!embed.fields.length) {
+      return
+    }
+
+    await member.send({ embeds: [embed] })
+  } catch {}
+})
+
 rtc.on('EXECUTE_COMMANDS', (commands) => {
   queue.push(...commands)
   work()
